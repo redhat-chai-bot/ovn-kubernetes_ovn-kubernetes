@@ -607,7 +607,7 @@ jobs:
     # The no-flood lane (disable-udn-arp-ndp-flood) runs serially, including
     # the Serial specs, with one fixture per spec, and needs proportionally
     # more: see its TEST_TIMEOUT and the Run Tests step timeout below.
-    timeout-minutes: ${{ matrix.disable-udn-arp-ndp-flood == 'true' && 300 || 220 }}
+    timeout-minutes: ${{ matrix.disable-udn-arp-ndp-flood == 'noFlood' && 300 || 220 }}
     strategy:
       fail-fast: false
       matrix:
@@ -659,7 +659,7 @@ jobs:
           - {"target": "network-segmentation", "gateway-mode": "local", "ipfamily": "dualstack", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "cni-mode": "unprivileged"}
           - {"target": "network-segmentation-dynamic", "gateway-mode": "shared", "ipfamily": "ipv4", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "cni-mode": "unprivileged"}
           - {"target": "network-segmentation", "gateway-mode": "shared", "ipfamily": "ipv6", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "cni-mode": "privileged"}
-          - {"target": "network-segmentation", "gateway-mode": "shared", "ipfamily": "dualstack", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "disable-udn-arp-ndp-flood":"true", "cni-mode": "privileged"}
+          - {"target": "network-segmentation", "gateway-mode": "shared", "ipfamily": "dualstack", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "disable-udn-arp-ndp-flood":"noFlood", "cni-mode": "privileged"}
           - {"target": "bgp", "gateway-mode": "local",  "ipfamily": "dualstack", "disable-snat-multiple-gws": "snatGW", "second-bridge": "1br", "cni-mode": "privileged", "routeadvertisements": "advertise-default", "network-segmentation": "enable-network-segmentation", "dns-name-resolver": "enable-dns-name-resolver"}
           - {"target": "bgp", "gateway-mode": "shared",  "ipfamily": "dualstack", "disable-snat-multiple-gws": "noSnatGW", "second-bridge": "1br", "cni-mode": "privileged", "routeadvertisements": "advertise-default", "network-segmentation": "enable-network-segmentation", "dns-name-resolver": "enable-dns-name-resolver"}
           - {"target": "bgp", "gateway-mode": "local",  "ipfamily": "ipv6", "disable-snat-multiple-gws": "snatGW", "second-bridge": "1br", "cni-mode": "privileged", "routeadvertisements": "advertise-default", "network-segmentation": "enable-network-segmentation"}
@@ -693,7 +693,7 @@ jobs:
       OVN_SECOND_BRIDGE: "${{ matrix.second-bridge == '2br' }}"
       ENABLE_MULTI_NET: "${{ matrix.target == 'multi-homing' || matrix.target == 'kv-live-migration' || startsWith(matrix.target, 'network-segmentation') || matrix.target == 'tools' || matrix.target == 'traffic-flow-test-only' || matrix.routeadvertisements != '' }}"
       ENABLE_NETWORK_SEGMENTATION: "${{ startsWith(matrix.target, 'network-segmentation') || matrix.network-segmentation == 'enable-network-segmentation' }}"
-      DISABLE_UDN_ARP_NDP_FLOOD: "${{ matrix.disable-udn-arp-ndp-flood }}"
+      DISABLE_UDN_ARP_NDP_FLOOD: "${{ matrix.disable-udn-arp-ndp-flood == 'noFlood' && 'true' || '' }}"
       # The no-flood lane runs serially, including the Serial specs, with one
       # fixture per spec; measured ~178 minutes of tests before the uplink
       # suite also went per-spec, which added a full uplink setup and teardown
@@ -703,7 +703,7 @@ jobs:
       # launchers take a duration ("120m") where the control-plane launcher
       # takes minutes, so an explicit value for the other lanes would break
       # one or the other. The scripts treat empty as unset.
-      TEST_TIMEOUT: ${{ matrix.disable-udn-arp-ndp-flood == 'true' && 240 || '' }}
+      TEST_TIMEOUT: ${{ matrix.disable-udn-arp-ndp-flood == 'noFlood' && 240 || '' }}
       PLATFORM_IPV4_SUPPORT: "${{ matrix.ipfamily == 'ipv4' || matrix.ipfamily == 'dualstack' }}"
       PLATFORM_IPV6_SUPPORT: "${{ matrix.ipfamily == 'ipv6' || matrix.ipfamily == 'dualstack' }}"
       KIND_LOCAL_REGISTRY: "${{ matrix.local-kind-registry == 'true' }}"
@@ -726,9 +726,9 @@ jobs:
       # Managed BGP tests change the shared template and must run serially.
       # The ARP/NDP flood lane carries Serial specs that PARALLEL=true would skip,
       # and they are the only CI coverage of the MAC binding mirroring controller.
-      # Compared against 'true' rather than negated: any non-empty string, "false"
+      # Compared against 'noFlood' rather than negated: any non-empty string, "false"
       # included, is truthy in a GitHub expression.
-      PARALLEL: "${{ matrix.target != 'serial' && matrix.target != 'bgp-managed' && matrix.disable-udn-arp-ndp-flood != 'true' }}"
+      PARALLEL: "${{ matrix.target != 'serial' && matrix.target != 'bgp-managed' && matrix.disable-udn-arp-ndp-flood != 'noFlood' }}"
       OVN_UNPRIVILEGED_MODE: "${{ matrix.cni-mode == 'unprivileged' }}"
       MULTI_POD_SUBNET: true
       DYNAMIC_UDN_ALLOCATION: "${{ endsWith(matrix.target, '-dynamic') }}"
@@ -878,7 +878,7 @@ jobs:
       # get its output
       # the no-flood lane runs serially, including the Serial specs, with one
       # fixture per spec: it gets 260 to match its raised TEST_TIMEOUT
-      timeout-minutes: ${{ matrix.disable-udn-arp-ndp-flood == 'true' && 260 || startsWith(matrix.target, 'bgp') && 190 || matrix.target == 'evpn' && 190 || matrix.target == 'control-plane' && 190 || matrix.target == 'external-gateway' && 190 || startsWith(matrix.target, 'network-segmentation') && 190 || 130 }}
+      timeout-minutes: ${{ matrix.disable-udn-arp-ndp-flood == 'noFlood' && 260 || startsWith(matrix.target, 'bgp') && 190 || matrix.target == 'evpn' && 190 || matrix.target == 'control-plane' && 190 || matrix.target == 'external-gateway' && 190 || startsWith(matrix.target, 'network-segmentation') && 190 || 130 }}
       run: |
         if [ "${{ matrix.target }}" == "multi-homing" ]; then
           make -C test control-plane WHAT="Multi Homing"
